@@ -5,18 +5,29 @@ using Newtonsoft.Json;
 
 namespace io.prediction
 {
+    /// <summary>
+    ///     BaseClient contains code common to both EventClient EngineClient.
+    /// </summary>
     public abstract class BaseClient : IDisposable
     {
+        /// <summary>
+        ///     Default Api Version
+        /// </summary>
         protected static readonly string DefaultApiVersion = "";
+
+        /// <summary>
+        ///     Default Timeout
+        /// </summary>
         private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
 
-        // HTTP status code
-        protected const int HttpOk = 200;
-        protected const int HttpCreated = 201;
-
-        // API Url
+        /// <summary>
+        ///  API Url
+        /// </summary>
         protected readonly string ApiUrl;
 
+        /// <summary>
+        ///     HttpClient
+        /// </summary>
         protected readonly HttpClient Client;
 
         /// <summary>
@@ -29,7 +40,7 @@ namespace io.prediction
 
         /// <summary>
         /// param apiURL the URL of the PredictionIO API
-        //  param timeout timeout in seconds for the connections
+        ///  param timeout timeout in seconds for the connections
         /// </summary>
         protected BaseClient(string apiUrl, TimeSpan timeout)
         {
@@ -57,7 +68,9 @@ namespace io.prediction
                 .DeserializeObject<T>(response.Result.Content.ReadAsStringAsync().Result);
             return result;
         }
-
+        /// <summary>
+        ///     Disposes the HttpClient
+        /// </summary>
         public void Dispose()
         {
             Client.Dispose();

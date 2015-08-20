@@ -1,0 +1,21 @@
+﻿using System.Collections.Generic;
+
+namespace io.prediction
+{
+    /// <summary>
+    ///     Return root model of Engine Client
+    /// </summary>
+    public partial class ItemScoresRootObject
+    {
+        public IList<ItemScore> ItemScores { get; set; }
+    }
+
+    /// <summary>
+    ///     Return model of Engine Client
+    /// </summary>
+    public partial class ItemScore
+    {
+        public string Item { get; set; }
+        public double Score { get; set; }
+    }
+}

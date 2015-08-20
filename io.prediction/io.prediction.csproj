@@ -50,10 +50,10 @@
     <Compile Include="EngineClient.cs" />
     <Compile Include="EventModel.cs" />
     <Compile Include="EventClient.cs" />
+    <Compile Include="ItemScoresRootObject.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

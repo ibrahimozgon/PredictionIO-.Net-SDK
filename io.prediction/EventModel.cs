@@ -4,12 +4,11 @@ using Newtonsoft.Json;
 
 namespace io.prediction
 {
-    public class EventModel
+    /// <summary>
+    ///     Model to send data to event server
+    /// </summary>
+    public partial class EventModel
     {
-        public EventModel()
-        {
-            EventTime = DateTime.Now;
-        }
         // mandatory fields
         [JsonProperty(PropertyName = "event")]
         public string EventValue { get; set; }
@@ -27,22 +26,5 @@ namespace io.prediction
         public Dictionary<string, object> Properties { get; set; }
         [JsonProperty(PropertyName = "eventTime")]
         public DateTime EventTime { get; set; }
-
-        public override string ToString()
-        {
-            return JsonConvert.SerializeObject(this);
-        }
     }
-
-    public class ItemScore
-    {   
-        public string Item { get; set; }
-        public double Score { get; set; }
-    }
-
-    public class ItemScoresModel
-    {
-        public IList<ItemScore> ItemScores { get; set; }
-    }
-
 }
