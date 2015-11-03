@@ -42,7 +42,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Example.cs" />
+    <Compile Include="EngineExample.cs" />
+    <Compile Include="EventExample.cs" />
+    <Compile Include="MainClass.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

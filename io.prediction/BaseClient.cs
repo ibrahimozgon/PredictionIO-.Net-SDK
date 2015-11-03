@@ -1,24 +1,22 @@
 ﻿using System;
-using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using RestSharp;
 
 namespace io.prediction
 {
     /// <summary>
     ///     BaseClient contains code common to both EventClient EngineClient.
     /// </summary>
-    public abstract class BaseClient : IDisposable
+    public abstract class BaseClient
     {
-        /// <summary>
-        ///     Default Api Version
-        /// </summary>
-        protected static readonly string DefaultApiVersion = "";
-
         /// <summary>
         ///     Default Timeout
         /// </summary>
-        private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
+        private const int DefaultTimeout = 5000;
+        private const string JsonType = "application/json";
+        private const string AccessKeyName = "accessKey";
 
         /// <summary>
         ///  API Url
@@ -28,13 +26,18 @@ namespace io.prediction
         /// <summary>
         ///     HttpClient
         /// </summary>
-        protected readonly HttpClient Client;
+        protected readonly RestClient Client;
+
+        /// <summary>
+        ///     the access key that this client will use to communicate with the API
+        /// </summary>
+        protected string AccessKey { get; }
 
         /// <summary>
         ///  param apiURL the URL of the PredictionIO API
         /// </summary>
-        protected BaseClient(string apiUrl)
-            : this(apiUrl, DefaultTimeout)
+        protected BaseClient(string apiUrl, string accessKey)
+            : this(apiUrl, accessKey, DefaultTimeout)
         {
         }
 
@@ -42,38 +45,74 @@ namespace io.prediction
         /// param apiURL the URL of the PredictionIO API
         ///  param timeout timeout in seconds for the connections
         /// </summary>
-        protected BaseClient(string apiUrl, TimeSpan timeout)
+        protected BaseClient(string apiUrl, string accessKey, int timeout)
         {
             ApiUrl = apiUrl;
-            // Async HTTP client config
-            Client = new HttpClient
+            AccessKey = accessKey;
+            Client = new RestClient(apiUrl) { Timeout = timeout };
+        }
+
+        public T Execute<T>(string resource, Method method, object body)
+        {
+            var request = new RestRequest(AppendAccessKey(resource)) { Method = method };
+            request.AddHeader("Content-Type", JsonType);
+            request.AddHeader("Accept", "application/json; charset=UTF-8");
+            if (body != null)
+                request.AddParameter(JsonType, JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+            var content = Client.Execute(request).Content;
+            if (string.IsNullOrWhiteSpace(content))
             {
-                BaseAddress = new Uri(apiUrl),
-                Timeout = timeout,
-                //MaxResponseContentBufferSize = threadLimit
-            };
+                return default(T);
+            }
+            return GetResponseAsJson<T>(content);
         }
 
-        /// <summary>
-        ///     Gets query result from a previously sent asynchronous request.
-        /// </summary>
-        /// <param name="response"></param>
-        /// <returns></returns>
-        protected T GetResult<T>(Task<HttpResponseMessage> response)
+        public async Task<T> ExecuteAsync<T>(string resource, Method method, object body)
         {
-            if (!response.Result.IsSuccessStatusCode)
-                throw new Exception(response.Result.Content.ReadAsStringAsync().Result);
-
-            var result = JsonConvert
-                .DeserializeObject<T>(response.Result.Content.ReadAsStringAsync().Result);
-            return result;
+            var request = new RestRequest(AppendAccessKey(resource)) { Method = method };
+            request.AddHeader("Content-Type", JsonType);
+            request.AddHeader("Accept", "application/json; charset=UTF-8");
+            if (body != null)
+                request.AddParameter(JsonType, JsonConvert.SerializeObject(body),
+                    ParameterType.RequestBody);
+            var tcs = new TaskCompletionSource<IRestResponse>();
+            Client.ExecuteAsync(request, response =>
+            {
+                if (response.ErrorException != null)
+                    tcs.TrySetException(response.ErrorException);
+                else
+                    tcs.TrySetResult(response);
+            });
+            var content = (await tcs.Task.ConfigureAwait(false)).Content;
+            if (string.IsNullOrWhiteSpace(content))
+                return default(T);
+            return GetResponseAsJson<T>(content);
         }
-        /// <summary>
-        ///     Disposes the HttpClient
-        /// </summary>
-        public void Dispose()
+
+
+        private string AppendAccessKey(string resource)
         {
-            Client.Dispose();
+            if (AccessKey == null)
+                throw new ArgumentException("Access Key can not be NULL");
+
+            var builder = new StringBuilder(resource);
+            builder.Append('?');
+            builder.Append(AccessKeyName);
+            builder.Append('=');
+            builder.Append(AccessKey);
+            return builder.ToString();
+        }
+
+        private static T GetResponseAsJson<T>(string content)
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject<T>(content);
+            }
+            catch
+            {
+                throw new Exception(content);
+            }
         }
     }
 }

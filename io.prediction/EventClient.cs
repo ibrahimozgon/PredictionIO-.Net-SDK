@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
+using RestSharp;
 
 namespace io.prediction
 {
@@ -18,11 +17,7 @@ namespace io.prediction
         ///     Default url
         /// </summary>
         private const string DefaultEventUrl = "http://localhost:7070";
-
-        /// <summary>
-        ///     the access key that this client will use to communicate with the API
-        /// </summary>
-        private readonly string _accessKey;
+        private const string EventQ = "/events.json";
 
         /// <summary>
         ///      Instantiate a PredictionIO RESTful API Event Client using default values for API URL
@@ -31,7 +26,7 @@ namespace io.prediction
         /// </summary>
         /// <param name="accessKey">the access key that this client will use to communicate with the API</param>
         public EventClient(string accessKey)
-            : this(accessKey, DefaultEventUrl)
+            : base(DefaultEventUrl, accessKey)
         {
         }
 
@@ -40,40 +35,19 @@ namespace io.prediction
         /// </summary>
         /// <param name="accessKey">the access key that this client will use to communicate with the API</param>
         /// <param name="eventUrl"> eventURL the URL of the PredictionIO API</param>
-        public EventClient(string accessKey, string eventUrl)
-            : base(eventUrl)
-        {
-            _accessKey = accessKey;
-        }
-
-        /// <summary>
-        ///     Sends an asynchronous create event request to the API.
-        /// </summary>
-        /// <param name="event">event an instance of {@link Event} that will be turned into a request</param>
-        /// <returns>Async task result</returns>
-        public Task<HttpResponseMessage> CreateEventAsync(EventModel @event)
-        {
-            return Client.PostAsJsonAsync("/events.json?accessKey=" + _accessKey, @event);
-        }
-
-        /// <summary>
-        ///     Sends a synchronous create event request to the API.
-        /// </summary>
-        /// <param name="eventModel">event an instance of {@link Event} that will be turned into a request</param>
-        /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse CreateEvent(EventModel eventModel)
-        {
-            return GetResult<ApiResponse>(CreateEventAsync(eventModel));
-        }
+        /// <param name="timeOut"></param>
+        public EventClient(string accessKey, string eventUrl, int timeOut)
+            : base(eventUrl, accessKey, timeOut)
+        { }
 
         /// <summary>
         ///     Sends an asynchronous get event request to the API.
         /// </summary>
         /// <param name="eid">eid ID of the event to get</param>
         /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> GetEventAsync(string eid)
+        public async Task<EventModel> GetEventAsync(string eid)
         {
-            return Client.GetAsync("/events/" + eid + ".json?accessKey=" + _accessKey);
+            return await ExecuteAsync<EventModel>(EventQ, Method.GET, eid);
         }
 
         /// <summary>
@@ -83,7 +57,7 @@ namespace io.prediction
         /// <returns><see cref="EventModel"/></returns>
         public EventModel GetEvent(string eid)
         {
-            return GetResult<EventModel>(GetEventAsync(eid));
+            return Execute<EventModel>(EventQ, Method.GET, eid);
         }
 
         /// <summary>
@@ -94,30 +68,20 @@ namespace io.prediction
         /// <param name="properties">properties a map of all the properties to be associated with the user, could be empty</param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns></returns>
-        public Task<HttpResponseMessage> SetUserAsync(string uid, Dictionary<string, Object> properties, DateTime eventTime)
+        public async Task<ApiResponse> SetUserAsync(string uid, Dictionary<string, object> properties,
+            DateTime eventTime = default(DateTime))
         {
-            return CreateEventAsync(new EventModel
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
             {
                 EventValue = "$set",
                 EntityId = uid,
                 EntityType = "user",
                 EventTime = eventTime,
                 Properties = properties
-            });
-        }
-
-
-        /// <summary>
-        ///      Sends a set user properties request. Same as
-        ///      SetUserAsync(string, Dictionary, DateTime)
-        ///      except event time is not specified and recorded as the time when the function is called.
-        /// </summary>
-        /// <param name="uid">ID of the user</param>
-        /// <param name="properties">properties a map of all the properties to be associated with the user, could be empty</param>
-        /// <returns></returns>
-        public Task<HttpResponseMessage> SetUserAsync(string uid, Dictionary<string, Object> properties)
-        {
-            return SetUserAsync(uid, properties, DateTime.Now);
+            };
+            return await ExecuteAsync<ApiResponse>(EventQ, Method.POST, model);
         }
 
         /// <summary>
@@ -128,83 +92,60 @@ namespace io.prediction
         /// <param name="properties"> a dictionary of all the properties to be associated with the user, could be empty</param>
         /// <param name="eventTime"> timestamp of the event</param>
         /// <returns>ID of this event<see cref="ApiResponse"/></returns>
-        public ApiResponse SetUser(string uid, Dictionary<string, Object> properties, DateTime eventTime)
+        public ApiResponse SetUser(string uid, Dictionary<string, object> properties = null, DateTime eventTime = default(DateTime))
         {
-            return GetResult<ApiResponse>(SetUserAsync(uid, properties, eventTime));
-        }
-
-        /// <summary>
-        ///     Sets properties of a user. Same as SetUser(string, Dictionary, DateTime)
-        ///      except event time is not specified and recorded as the time when the function is called.
-        /// </summary>
-        /// <param name="uid"> ID of the user</param>
-        /// <param name="properties"> a dictionary of all the properties to be associated with the user, could be empty</param>
-        /// <returns>ID of this event<see cref="ApiResponse"/></returns>
-        public ApiResponse SetUser(string uid, Dictionary<string, Object> properties)
-        {
-            return SetUser(uid, properties, DateTime.Now);
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
+            {
+                EventValue = "$set",
+                EntityId = uid,
+                EntityType = "user",
+                EventTime = eventTime,
+                Properties = properties
+            };
+            return Execute<ApiResponse>(EventQ, Method.POST, model);
         }
 
         /// <summary>
         ///     Sends an unset user properties request. The list must not be empty.
         /// </summary>
         /// <param name="uid">ID of the user</param>
-        /// <param name="properties"> a list of all the properties to unset</param>
         /// <param name="eventTime">timestamp of the event</param>
         /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> UnsetUserAsync(string uid, List<string> properties,
-                DateTime eventTime)
+        public async Task<ApiResponse> UnsetUserAsync(string uid,
+                DateTime eventTime = default(DateTime))
         {
-            if (!properties.Any())
-                throw new Exception("property list cannot be empty");
-            // converts the list into a map (to empty string) before creating the event object
-            Dictionary<string, object> propertyDictionary = properties.ToDictionary<string, string, object>(property => property, property => "");
-
-            return CreateEventAsync(new EventModel
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
             {
                 EventValue = "$unset",
                 EntityType = "user",
                 EntityId = uid,
                 EventTime = eventTime,
-                Properties = propertyDictionary
-            });
-        }
-
-
-        /// <summary>
-        ///      Sends an unset user properties request. Same as
-        ///      UnsetUserAsync(string, List, DateTime)
-        ///      except event time is not specified and recorded as the time when the function is called.  
-        /// </summary>
-        /// <param name="uid">ID of the user</param>
-        /// <param name="properties">a list of all the properties to unset</param>
-        /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> UnsetUserAsync(string uid, List<string> properties)
-        {
-            return UnsetUserAsync(uid, properties, DateTime.Now);
+            };
+            return await ExecuteAsync<ApiResponse>(EventQ, Method.POST, model);
         }
 
         /// <summary>
         ///     Unsets properties of a user. The list must not be empty.
         /// </summary>
         /// <param name="uid">uid ID of the user</param>
-        /// <param name="properties">properties a list of all the properties to unset</param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse UnsetUser(string uid, List<string> properties, DateTime eventTime)
+        public ApiResponse UnsetUser(string uid, DateTime eventTime = default(DateTime))
         {
-            return GetResult<ApiResponse>(UnsetUserAsync(uid, properties, eventTime));
-        }
-
-        /// <summary>
-        ///     Unsets properties of a user. The list must not be empty.
-        /// </summary>
-        /// <param name="uid">uid ID of the user</param>
-        /// <param name="properties">properties a list of all the properties to unset</param>
-        /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse UnsetUser(string uid, List<string> properties)
-        {
-            return UnsetUser(uid, properties, DateTime.Now);
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
+            {
+                EventValue = "$unset",
+                EntityType = "user",
+                EntityId = uid,
+                EventTime = eventTime,
+            };
+            return Execute<ApiResponse>(EventQ, Method.POST, model);
         }
 
         /// <summary>
@@ -213,27 +154,19 @@ namespace io.prediction
         /// <param name="uid">uid ID of the user</param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> DeleteUserAsync(string uid, DateTime eventTime)
+        public async Task<ApiResponse> DeleteUserAsync(string uid, DateTime eventTime = default(DateTime))
         {
-            return CreateEventAsync(
-                new EventModel
-                {
-                    EventValue = "$delete",
-                    EntityId = uid,
-                    EntityType = "user",
-                    EventTime = eventTime
-                }
-                );
-        }
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
+            {
+                EventValue = "$delete",
+                EntityId = uid,
+                EntityType = "user",
+                EventTime = eventTime
+            };
+            return await ExecuteAsync<ApiResponse>(EventQ, Method.POST, model);
 
-        /// <summary>
-        ///     Sends a delete user request.
-        /// </summary>
-        /// <param name="uid">uid ID of the user</param>
-        /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> DeleteUserAsync(string uid)
-        {
-            return DeleteUserAsync(uid, DateTime.Now);
         }
 
         /// <summary>
@@ -242,19 +175,18 @@ namespace io.prediction
         /// <param name="uid">uid ID of the user</param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse DeleteUser(string uid, DateTime eventTime)
+        public ApiResponse DeleteUser(string uid, DateTime eventTime = default(DateTime))
         {
-            return GetResult<ApiResponse>(DeleteUserAsync(uid, eventTime));
-        }
-
-        /// <summary>
-        ///     Deletes a user.
-        /// </summary>
-        /// <param name="uid">uid ID of the user</param>
-        /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse DeleteUser(string uid)
-        {
-            return DeleteUser(uid, DateTime.Now);
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
+            {
+                EventValue = "$delete",
+                EntityId = uid,
+                EntityType = "user",
+                EventTime = eventTime
+            };
+            return Execute<ApiResponse>(EventQ, Method.POST, model);
         }
 
         /// <summary>
@@ -265,29 +197,20 @@ namespace io.prediction
         /// <param name="properties">properties a map of all the properties to be associated with the item, could be empty</param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> SetItemAsync(string iid, Dictionary<string, Object> properties,
-                DateTime eventTime)
+        public async Task<ApiResponse> SetItemAsync(string iid, Dictionary<string, object> properties,
+                DateTime eventTime = default(DateTime))
         {
-            return CreateEventAsync(new EventModel
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
             {
                 EventValue = "$set",
                 EntityId = iid,
                 EntityType = "item",
                 EventTime = eventTime,
                 Properties = properties
-            });
-        }
-
-        /// <summary>
-        ///      Sends a set item properties request. Implicitly creates the item if it's not already there.
-        ///      Properties could be empty.  
-        /// </summary>
-        /// <param name="iid">iid ID of the item</param>
-        /// <param name="properties">properties a map of all the properties to be associated with the item, could be empty</param>
-        /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> SetItemAsync(string iid, Dictionary<string, Object> properties)
-        {
-            return SetItemAsync(iid, properties, DateTime.Now);
+            };
+            return await ExecuteAsync<ApiResponse>(EventQ, Method.POST, model);
         }
 
         /// <summary>
@@ -298,57 +221,55 @@ namespace io.prediction
         /// <param name="properties">properties a map of all the properties to be associated with the item, could be empty</param>
         /// <param name="eventTime"> eventTime timestamp of the event</param>
         /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse SetItem(string iid, Dictionary<string, Object> properties, DateTime eventTime)
+        public ApiResponse SetItem(string iid, Dictionary<string, object> properties, DateTime eventTime = default(DateTime))
         {
-            return GetResult<ApiResponse>(SetItemAsync(iid, properties, eventTime));
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
+            {
+                EventValue = "$set",
+                EntityId = iid,
+                EntityType = "item",
+                EventTime = eventTime,
+                Properties = properties
+            };
+            return Execute<ApiResponse>(EventQ, Method.POST, model);
         }
 
-        /// <summary>
-        ///      Sets properties of a item. Implicitly creates the item if it's not already there.
-        ///      Properties could be empty.   
-        /// </summary>
-        /// <param name="iid"> iid ID of the item</param>
-        /// <param name="properties">properties a map of all the properties to be associated with the item, could be empty</param>
-        /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse SetItem(string iid, Dictionary<string, Object> properties)
+        public ApiResponse SetItemWithCategory(string iid, IEnumerable<string> categories = null, DateTime eventTime = default(DateTime))
         {
-            return SetItem(iid, properties, DateTime.Now);
+            var properties = new Dictionary<string, object>();
+            if (categories != null)
+                properties.Add("categories", categories);
+            return SetItem(iid, properties);
+        }
+
+        public async Task<ApiResponse> SetItemWithCategoryAsync(string iid, IEnumerable<string> categories = null, DateTime eventTime = default(DateTime))
+        {
+            var properties = new Dictionary<string, object>();
+            if (categories != null)
+                properties.Add("categories", categories);
+            return await SetItemAsync(iid, properties);
         }
 
         /// <summary>
         ///     Sends an unset item properties request. The list must not be empty.
         /// </summary>
         /// <param name="iid">iid ID of the item</param>
-        /// <param name="properties">properties a list of all the properties to unset</param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> UnsetItemAsFuture(string iid, List<string> properties,
-                DateTime eventTime)
+        public async Task<ApiResponse> UnsetItemAsync(string iid, DateTime eventTime = default(DateTime))
         {
-            if (!properties.Any())
-                throw new Exception("property list cannot be empty");
-            // converts the list into a map (to empty string) before creating the event object
-            var propertiesMap = properties.ToDictionary<string, string, object>(property => property, property => "");
-
-            return CreateEventAsync(new EventModel
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
             {
                 EventValue = "$unset",
                 EntityType = "item",
-                Properties = propertiesMap,
                 EventTime = eventTime,
                 EntityId = iid
-            });
-        }
-
-        /// <summary>
-        ///     Sends an unset item properties request. The list must not be empty.
-        /// </summary>
-        /// <param name="iid">iid ID of the item</param>
-        /// <param name="properties">properties a list of all the properties to unset</param>
-        /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> UnsetItemAsFuture(string iid, List<string> properties)
-        {
-            return UnsetItemAsFuture(iid, properties, DateTime.Now);
+            };
+            return await ExecuteAsync<ApiResponse>(EventQ, Method.POST, model);
         }
 
         /// <summary>
@@ -358,20 +279,18 @@ namespace io.prediction
         /// <param name="properties">properties a list of all the properties to unset</param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse UnsetItem(string iid, List<string> properties, DateTime eventTime)
+        public ApiResponse UnsetItem(string iid, List<string> properties, DateTime eventTime = default(DateTime))
         {
-            return GetResult<ApiResponse>(UnsetItemAsFuture(iid, properties, eventTime));
-        }
-
-        /// <summary>
-        ///     Unsets properties of a item. The list must not be empty.
-        /// </summary>
-        /// <param name="iid">iid ID of the item</param>
-        /// <param name="properties">properties a list of all the properties to unset</param>
-        /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse UnsetItem(string iid, List<string> properties)
-        {
-            return UnsetItem(iid, properties, DateTime.Now);
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
+            {
+                EventValue = "$unset",
+                EntityType = "item",
+                EventTime = eventTime,
+                EntityId = iid
+            };
+            return Execute<ApiResponse>(EventQ, Method.POST, model);
         }
 
         /// <summary>
@@ -380,26 +299,20 @@ namespace io.prediction
         /// <param name="iid"> iid ID of the item</param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> DeleteItemAsync(string iid, DateTime eventTime)
+        public async Task<ApiResponse> DeleteItemAsync(string iid, DateTime eventTime = default(DateTime))
         {
-            return CreateEventAsync(new EventModel
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
             {
                 EventValue = "$delete",
                 EntityType = "item",
                 EventTime = eventTime,
                 EntityId = iid,
 
-            });
-        }
-
-        /// <summary>
-        ///     Sends a delete item request.
-        /// </summary>
-        /// <param name="iid"> iid ID of the item</param>
-        /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> DeleteItemAsync(string iid)
-        {
-            return DeleteItemAsync(iid, DateTime.Now);
+            };
+            return await ExecuteAsync<ApiResponse>(EventQ, Method.POST, model);
+            //return await CreateEventAsync();
         }
 
         /// <summary>
@@ -408,19 +321,19 @@ namespace io.prediction
         /// <param name="iid">iid ID of the item</param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse DeleteItem(string iid, DateTime eventTime)
+        public ApiResponse DeleteItem(string iid, DateTime eventTime = default(DateTime))
         {
-            return GetResult<ApiResponse>(DeleteItemAsync(iid, eventTime));
-        }
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
+            {
+                EventValue = "$delete",
+                EntityType = "item",
+                EventTime = eventTime,
+                EntityId = iid,
 
-        /// <summary>
-        ///     Deletes a item.
-        /// </summary>
-        /// <param name="iid">iid ID of the item</param>
-        /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse DeleteItem(string iid)
-        {
-            return DeleteItem(iid, DateTime.Now);
+            };
+            return Execute<ApiResponse>(EventQ, Method.POST, model);
         }
 
         /// <summary>
@@ -432,10 +345,12 @@ namespace io.prediction
         /// <param name="properties">properties a map of properties associated with this action</param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> UserActionItemAsync(string action, string uid, string iid,
-                Dictionary<string, Object> properties, DateTime eventTime)
+        public async Task<ApiResponse> UserActionItemAsync(string action, string uid, string iid,
+                Dictionary<string, object> properties = null, DateTime eventTime = default(DateTime))
         {
-            return CreateEventAsync(new EventModel
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+            var model = new EventModel
             {
                 EventValue = action,
                 EntityType = "user",
@@ -444,21 +359,8 @@ namespace io.prediction
                 TargetEntityType = "item",
                 Properties = properties,
                 TargetEntityId = iid
-            });
-        }
-
-        /// <summary>
-        ///     Sends a user-action-on-item request.
-        /// </summary>
-        /// <param name="action">action name of the action performed</param>
-        /// <param name="uid">uid ID of the user</param>
-        /// <param name="iid">iid ID of the item</param>
-        /// <param name="properties">properties a map of properties associated with this action</param>
-        /// <returns><see cref="Task"/></returns>
-        public Task<HttpResponseMessage> UserActionItemAsync(string action, string uid, string iid,
-                Dictionary<string, Object> properties)
-        {
-            return UserActionItemAsync(action, uid, iid, properties, DateTime.Now);
+            };
+            return await ExecuteAsync<ApiResponse>(EventQ, Method.POST, model);
         }
 
         /// <summary>
@@ -471,23 +373,70 @@ namespace io.prediction
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="ApiResponse"/></returns>
         public ApiResponse UserActionItem(string action, string uid, string iid,
-                Dictionary<string, Object> properties, DateTime eventTime)
+                Dictionary<string, object> properties = null, DateTime eventTime = default(DateTime))
         {
-            return GetResult<ApiResponse>(UserActionItemAsync(action, uid, iid, properties, eventTime));
+            if (eventTime == default(DateTime))
+                eventTime = DateTime.Now;
+
+            var model = new EventModel
+            {
+                EventValue = action,
+                EntityType = "user",
+                EntityId = uid,
+                TargetEntityType = "item",
+                TargetEntityId = iid,
+                Properties = properties,
+                EventTime = eventTime,
+            };
+            return Execute<ApiResponse>(EventQ, Method.POST, model);
         }
 
         /// <summary>
-        ///     Records a user-action-on-item event.
+        ///     Records a user-view event -on-item.
         /// </summary>
-        /// <param name="action">action name of the action performed</param>
         /// <param name="uid">uid ID of the user</param>
         /// <param name="iid">iid ID of the item</param>
-        /// <param name="properties">properties a map of properties associated with this action</param>
+        /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse UserActionItem(string action, string uid, string iid,
-                Dictionary<string, Object> properties)
+        public ApiResponse UserViewedItem(string uid, string iid, DateTime eventTime = default(DateTime))
         {
-            return UserActionItem(action, uid, iid, properties, DateTime.Now);
+            return UserActionItem("view", uid, iid);
+        }
+
+        /// <summary>
+        ///     Records a user-view event -on-item.
+        /// </summary>
+        /// <param name="uid">uid ID of the user</param>
+        /// <param name="iid">iid ID of the item</param>
+        /// <param name="eventTime">eventTime timestamp of the event</param>
+        /// <returns><see cref="ApiResponse"/></returns>
+        public async Task<ApiResponse> UserViewedItemAsync(string uid, string iid, DateTime eventTime = default(DateTime))
+        {
+            return await UserActionItemAsync("view", uid, iid);
+        }
+
+        /// <summary>
+        ///     Records a user-buy event -on-item.
+        /// </summary>
+        /// <param name="uid">uid ID of the user</param>
+        /// <param name="iid">iid ID of the item</param>
+        /// <param name="eventTime">eventTime timestamp of the event</param>
+        /// <returns><see cref="ApiResponse"/></returns>
+        public ApiResponse UserBoughtItem(string uid, string iid, DateTime eventTime = default(DateTime))
+        {
+            return UserActionItem("buy", uid, iid);
+        }
+
+        /// <summary>
+        ///     Records a user-buy event -on-item.
+        /// </summary>
+        /// <param name="uid">uid ID of the user</param>
+        /// <param name="iid">iid ID of the item</param>
+        /// <param name="eventTime">eventTime timestamp of the event</param>
+        /// <returns><see cref="ApiResponse"/></returns>
+        public async Task<ApiResponse> UserBoughtItemAsync(string uid, string iid, DateTime eventTime = default(DateTime))
+        {
+            return await UserActionItemAsync("buy", uid, iid);
         }
     }
 }
