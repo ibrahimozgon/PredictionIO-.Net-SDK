@@ -8,6 +8,11 @@ namespace predictionIO.example
         {
             Console.WriteLine("EngineExample Running");
             var engineClient = new EngineClient(accessKey);
+            if (!engineClient.IsAlive())
+            {
+                Console.WriteLine("Engine is not running");
+                return;
+            }
 
             try
             {

@@ -8,7 +8,11 @@ namespace predictionIO.example
         {
             Console.WriteLine("EventExample Running");
             var client = new EventClient(accessKey);
-
+            if (!client.IsAlive())
+            {
+                Console.WriteLine("Event is not running");
+                return;
+            }
             var rand = new Random();
 
             // generate 10 users, with user ids 1 to 10
