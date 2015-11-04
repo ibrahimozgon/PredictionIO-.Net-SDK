@@ -1,4 +1,4 @@
-﻿namespace io.prediction
+﻿namespace prediction.io
 {
     /// <summary>
     ///     The Response of Client Request

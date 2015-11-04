@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using RestSharp;
 
-namespace io.prediction
+namespace prediction.io
 {
     /// <summary>
     ///      EventClient contains the generic methods createEvent() and getEvent() for importing and

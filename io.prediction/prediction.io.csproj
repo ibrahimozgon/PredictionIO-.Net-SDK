@@ -7,8 +7,8 @@
     <ProjectGuid>{9D192065-ECD6-4E82-8662-C1268B2D8E1B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>io.prediction</RootNamespace>
-    <AssemblyName>io.prediction</AssemblyName>
+    <RootNamespace>prediction.io</RootNamespace>
+    <AssemblyName>prediction.io</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
