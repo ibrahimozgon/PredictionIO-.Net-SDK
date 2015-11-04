@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace prediction.io
+namespace predictionIO
 {
     /// <summary>
     ///     Return root model of Engine Client

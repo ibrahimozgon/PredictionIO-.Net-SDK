@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using RestSharp;
 
-namespace prediction.io
+namespace predictionIO
 {
     /// <summary>
     ///     EngineClient contains generic methods sendQuery() and sendQueryAsFuture()

@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "prediction.io", "io.prediction\prediction.io.csproj", "{9D192065-ECD6-4E82-8662-C1268B2D8E1B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "predictionIO", "io.prediction\predictionIO.csproj", "{9D192065-ECD6-4E82-8662-C1268B2D8E1B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "prediction.io.example", "io.prediction.example\prediction.io.example.csproj", "{A9EDB957-1021-412B-BABA-665C1E4FFCF5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "predictionIO.example", "io.prediction.example\predictionIO.example.csproj", "{A9EDB957-1021-412B-BABA-665C1E4FFCF5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

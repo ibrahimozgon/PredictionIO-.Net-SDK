@@ -1,4 +1,4 @@
-﻿namespace prediction.io.example
+﻿namespace predictionIO.example
 {
     public class MainClass
     {

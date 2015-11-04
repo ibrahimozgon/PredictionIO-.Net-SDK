@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace prediction.io
+namespace predictionIO
 {
     /// <summary>
     ///     Model to send data to event server

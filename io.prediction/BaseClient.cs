@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RestSharp;
 
-namespace prediction.io
+namespace predictionIO
 {
     /// <summary>
     ///     BaseClient contains code common to both EventClient EngineClient.
