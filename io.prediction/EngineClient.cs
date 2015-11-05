@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using RestSharp;
 
@@ -95,6 +96,21 @@ namespace predictionIO
             if (whiteList != null)
                 query.Add("whiteList", whiteList);
             return await SendQueryAsync<ItemScoresRootObject>(query);
+        }
+
+        public override bool IsAlive()
+        {
+            try
+            {
+                var result = Client.Execute(new RestRequest("/"));
+                return !string.IsNullOrEmpty(result?.Content);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+
         }
     }
 

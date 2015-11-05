@@ -438,5 +438,16 @@ namespace predictionIO
         {
             return await UserActionItemAsync("buy", uid, iid);
         }
+
+        public override bool IsAlive()
+        {
+            var response = Execute<ServerCheck>("/", Method.GET, null);
+            return response != null && response.Status == "alive";
+        }
+
+        private class ServerCheck
+        {
+            public string Status { get; set; }
+        }
     }
 }

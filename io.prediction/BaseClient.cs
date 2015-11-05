@@ -89,11 +89,7 @@ namespace predictionIO
             return GetResponseAsJson<T>(content);
         }
 
-        public bool IsAlive()
-        {
-            var response = Execute<ServerCheck>("/", Method.GET, null);
-            return response != null && response.Status == "alive";
-        }
+        public abstract bool IsAlive();
 
         private string AppendAccessKey(string resource)
         {
@@ -118,11 +114,6 @@ namespace predictionIO
             {
                 throw new Exception(content);
             }
-        }
-
-        private class ServerCheck
-        {
-            public string Status { get; set; }
         }
     }
 }
