@@ -29,6 +29,14 @@ namespace predictionIO
             : base(DefaultEventUrl, accessKey)
         {
         }
+        /// <summary>
+        ///    Instantiate a PredictionIO RESTful API Event Client using default values in 
+        /// </summary>
+        /// <param name="accessKey">the access key that this client will use to communicate with the API</param>
+        /// <param name="eventUrl"> eventURL the URL of the PredictionIO API</param>
+        public EventClient(string eventUrl, string accessKey)
+            : base(eventUrl, accessKey)
+        { }
 
         /// <summary>
         ///    Instantiate a PredictionIO RESTful API Event Client using default values in 
@@ -36,7 +44,7 @@ namespace predictionIO
         /// <param name="accessKey">the access key that this client will use to communicate with the API</param>
         /// <param name="eventUrl"> eventURL the URL of the PredictionIO API</param>
         /// <param name="timeOut"></param>
-        public EventClient(string accessKey, string eventUrl, int timeOut)
+        public EventClient(string eventUrl, string accessKey, int timeOut)
             : base(eventUrl, accessKey, timeOut)
         { }
 
@@ -68,7 +76,7 @@ namespace predictionIO
         /// <param name="properties">properties a map of all the properties to be associated with the user, could be empty</param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns></returns>
-        public async Task<ApiResponse> SetUserAsync(string uid, Dictionary<string, object> properties,
+        public async Task<ApiResponse> SetUserAsync(string uid, Dictionary<string, object> properties = null,
             DateTime eventTime = default(DateTime))
         {
             if (eventTime == default(DateTime))
@@ -92,7 +100,7 @@ namespace predictionIO
         /// <param name="properties"> a dictionary of all the properties to be associated with the user, could be empty</param>
         /// <param name="eventTime"> timestamp of the event</param>
         /// <returns>ID of this event<see cref="ApiResponse"/></returns>
-        public ApiResponse SetUser(string uid, Dictionary<string, object> properties = null, DateTime eventTime = default(DateTime))
+        public ApiResponse SetUser(string uid, Dictionary<string, object> properties, DateTime eventTime = default(DateTime))
         {
             if (eventTime == default(DateTime))
                 eventTime = DateTime.Now;
@@ -111,9 +119,10 @@ namespace predictionIO
         ///     Sends an unset user properties request. The list must not be empty.
         /// </summary>
         /// <param name="uid">ID of the user</param>
+        /// <param name="properties"></param>
         /// <param name="eventTime">timestamp of the event</param>
         /// <returns><see cref="Task"/></returns>
-        public async Task<ApiResponse> UnsetUserAsync(string uid,
+        public async Task<ApiResponse> UnsetUserAsync(string uid, Dictionary<string, object> properties,
                 DateTime eventTime = default(DateTime))
         {
             if (eventTime == default(DateTime))
@@ -132,9 +141,10 @@ namespace predictionIO
         ///     Unsets properties of a user. The list must not be empty.
         /// </summary>
         /// <param name="uid">uid ID of the user</param>
+        /// <param name="properties"></param>
         /// <param name="eventTime">eventTime timestamp of the event</param>
         /// <returns><see cref="ApiResponse"/></returns>
-        public ApiResponse UnsetUser(string uid, DateTime eventTime = default(DateTime))
+        public ApiResponse UnsetUser(string uid, Dictionary<string, object> properties, DateTime eventTime = default(DateTime))
         {
             if (eventTime == default(DateTime))
                 eventTime = DateTime.Now;
