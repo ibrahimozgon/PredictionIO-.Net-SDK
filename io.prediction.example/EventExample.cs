@@ -19,7 +19,7 @@ namespace predictionIO.example
             for (var user = 1; user <= 10; user++)
             {
                 Console.WriteLine("Add user " + user);
-                var result = client.SetUser(user.ToString());
+                var result = client.SetUser(user.ToString(), null);
             }
 
             // generate 50 items, with item ids 1 to 50
